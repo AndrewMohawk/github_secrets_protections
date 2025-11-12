@@ -15,21 +15,23 @@ GitHub masks exact secret values in logs, so each workflow uses light string man
 | [`protected-environment-secret-exfiltration.yml`](.github/workflows/protected-environment-secret-exfiltration.yml) | `workflow_dispatch` | Protected environments add an approval gate before jobs can access their secrets. |
 | [`print-everything.yml`](.github/workflows/print-everything.yml) | `workflow_dispatch` | Convenience workflow that reads every configured secret in one run. |
 
-## Prerequisites
+## Secrets
 
 1. **Repository secret**
    * Name: `REPO_LEVEL_SECRET`
-   * Value: anything distinct so you can recognise it in logs
-   * Screenshot placeholder: `![Repository secrets settings](docs/images/repo-secret-settings.png)`
-2. **Environment: `demo-environment`** (unprotected)
-   * Secrets: add `DEMO_ENV_SECRET`
-   * Screenshot placeholder: `![Demo environment settings](docs/images/demo-environment-settings.png)`
-3. **Environment: `protected-environment`** (requires approval)
-   * Require reviewers or wait timer in Settings → Environments → `protected-environment`
-   * Secrets: add `PROTECTED_ENV_SECRET`
-   * Screenshot placeholders:
-     * `![Protected environment rules](docs/images/protected-environment-rules.png)`
-     * `![Protected environment secrets](docs/images/protected-environment-secrets.png)`
+   * This secret is the stock secret that has been added to the repo, it has no protection from people with write access.
+   * <img width="1120" height="812" alt="image" src="https://github.com/user-attachments/assets/ebf224e4-711b-48d1-b30b-a5925c6f089e" />
+2. **Environment: `UNPROTECTED_ENVIRONMENT`** (unprotected)
+   * Secrets: `DEMO_ENV_SECRET`
+   * While this secret _is_ in an environment, that environement has no rules so its still available to anyone!
+   * <img width="1157" height="1043" alt="image" src="https://github.com/user-attachments/assets/bfd83968-51e1-406c-8524-b759fd465fd4" />
+
+3. **Environment: `PROTECTED_ENVIRONMENT`** (requires approval)
+   * Secrets: `PROTECTED_ENV_SECRET`
+   * <img width="1078" height="1402" alt="image" src="https://github.com/user-attachments/assets/bad547a4-9cb0-4be8-94e4-aeaece242b0b" />
+   * <img width="1081" height="907" alt="image" src="https://github.com/user-attachments/assets/5d842dca-a541-465b-9d27-921efb111bc5" />
+
+
 
 > Tip: Store screenshots in `docs/images/` so the placeholders above render automatically.
 
@@ -63,8 +65,3 @@ PY
 ```
 
 Because each character is separated by a space, GitHub does not detect the exact secret value, but observers can easily recover it.
-
-## Cleanup
-
-If you run these workflows in a public repository, rotate or delete the secrets afterwards. Consider adding a `README` warning (like the one at the top of this document) to deter accidental reuse of these patterns.
-
