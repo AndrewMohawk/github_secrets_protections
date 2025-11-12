@@ -1,0 +1,55 @@
+name: Print every secret
+
+on:
+  workflow_dispatch:
+
+jobs:
+  repo-secret:
+    name: Repository secret
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print repository secret
+        env:
+          REPO_LEVEL_SECRET: ${{ secrets.REPO_LEVEL_SECRET }}
+        run: |
+          python - <<'PY'
+import os
+secret = os.environ['REPO_LEVEL_SECRET']
+print('Repo secret characters:', '|'.join(secret))
+PY
+
+  environment-secret:
+    name: Demo environment secret
+    runs-on: ubuntu-latest
+    needs: repo-secret
+    environment:
+      name: demo-environment
+    steps:
+      - name: Print demo environment secret
+        env:
+          DEMO_ENV_SECRET: ${{ secrets.DEMO_ENV_SECRET }}
+        run: |
+          python - <<'PY'
+import os
+secret = os.environ['DEMO_ENV_SECRET']
+print('Demo environment secret ASCII:', ' '.join(str(ord(ch)) for ch in secret))
+PY
+
+  protected-secret:
+    name: Protected environment secret
+    runs-on: ubuntu-latest
+    needs: environment-secret
+    environment:
+      name: protected-environment
+    steps:
+      - name: Print protected environment secret
+        env:
+          PROTECTED_ENV_SECRET: ${{ secrets.PROTECTED_ENV_SECRET }}
+        run: |
+          python - <<'PY'
+import os
+secret = os.environ['PROTECTED_ENV_SECRET']
+shifted = ''.join(chr(((ord(ch) - 32 + 1) % 95) + 32) if 32 <= ord(ch) <= 126 else ch for ch in secret)
+print('Protected environment secret shifted:', shifted)
+print('Protected environment secret (comma separated):', ','.join(secret))
+PY
