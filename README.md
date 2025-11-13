@@ -1,19 +1,25 @@
 # GitHub Secrets Protections Playground
 
-This repository demonstrates how different types of GitHub Actions secrets behave when repository contributors try to exfiltrate them. The goal is to make it easy to reproduce common misconfigurations, show why environments matter, and offer a safe sandbox for experimenting with approval flows.
+This repository demonstrates a common **GitHub Actions footgun**: how secrets can be exfiltrated through pull requests. This is a critical security issue that catches many teams by surprise.
 
 > ⚠️ This project intentionally prints secrets to the workflow logs. **Never** copy these patterns into production workflows.
 
+## The Footgun
+
+When workflows are triggered by `pull_request` events, they run with repository secrets accessible to the workflow context—even when triggered by external contributors on forked branches. This means:
+
+- **Repository-level secrets** are exposed to pull request workflows
+- **Environment secrets** (even from "protected" environments) can be bypassed if not properly configured
+- Contributors without write access can potentially exfiltrate secrets by opening a malicious PR
+
 ## Overview
 
-GitHub masks exact secret values in logs, so each workflow uses light string manipulation (splitting characters or reversing strings) to avoid automatic masking. This keeps the workflows illustrative while still highlighting which access controls succeed or fail.
+GitHub masks exact secret values in logs, so these workflows use light string manipulation (pipe-separated characters or ASCII codes) to demonstrate the vulnerability while avoiding automatic masking.
 
 | Workflow | Trigger | What it shows |
 | --- | --- | --- |
-| [`repo-secret-exfiltration.yml`](.github/workflows/repo-secret-exfiltration.yml) | `workflow_dispatch` | Repository-level secrets are available to anyone who can run a workflow. |
-| [`environment-secret-exfiltration.yml`](.github/workflows/environment-secret-exfiltration.yml) | `workflow_dispatch` | Non-protected environments do **not** stop contributors with write access from reading environment secrets. |
-| [`protected-environment-secret-exfiltration.yml`](.github/workflows/protected-environment-secret-exfiltration.yml) | `workflow_dispatch` | Protected environments add an approval gate before jobs can access their secrets. |
-| [`print-everything.yml`](.github/workflows/print-everything.yml) | `workflow_dispatch` | Convenience workflow that reads every configured secret in one run. |
+| [`exfil-repo-secrets.yml`](.github/workflows/exfil-repo-secrets.yml) | `pull_request` | All three types of secrets are accessible on pull requests **without** environment declarations. This is the most dangerous scenario. |
+| [`exfil-repo-with-env.yml`](.github/workflows/exfil-repo-with-env.yml) | `pull_request` | Shows that even with environment declarations, secrets remain accessible on pull requests unless the environments are properly configured with branch protection. |
 
 ## Secrets
 
@@ -35,21 +41,31 @@ GitHub masks exact secret values in logs, so each workflow uses light string man
 
 > Tip: Store screenshots in `docs/images/` so the placeholders above render automatically.
 
-## Running the Workflows
+## Reproducing the Vulnerability
 
-All workflows are manually triggered:
+The workflows are triggered automatically on pull requests. To see the vulnerability in action:
 
-1. Open the **Actions** tab.
-2. Select the workflow you want to explore.
-3. Click **Run workflow**.
-4. Monitor the job logs to see how each type of secret behaves.
+1. Create a new branch with a trivial change (or use an existing PR)
+2. Open a pull request to the main branch
+3. Navigate to the **Actions** tab and observe the workflow runs
+4. Check the job logs to see the exfiltrated secrets printed in plain view
 
-### Expected outcomes
+> **Note:** You may need to enable Actions for pull requests from first-time contributors in your repository settings.
 
-* **Repository secret exfiltration** – Succeeds immediately because repository secrets are available to anyone with write access (or pull request workflows with `pull_request_target`).
-* **Environment secret exfiltration** – Succeeds immediately, demonstrating that environments without protection behave the same as repository secrets.
-* **Protected environment exfiltration** – Stalls until an approver authorises the run. Once approved, the job prints the secret using the same masking bypass technique.
-* **Print everything** – Runs three jobs in sequence, each targeting one of the secrets above to provide a single log trail.
+### Expected Outcomes
+
+* **exfil-repo-secrets.yml** – All three secrets (repo-level, unprotected environment, and protected environment) are printed successfully, even though the workflow doesn't declare environment contexts. This shows that repository-level access to secrets bypasses environment protections.
+
+* **exfil-repo-with-env.yml** – Even when properly declaring environment contexts, the secrets are still accessible on pull request triggers. This demonstrates that environment configuration alone isn't enough—you need additional branch protection rules.
+
+### The Real Danger
+
+The existing PR #5 ("NOT STEALING CREDS") is an example of what a malicious actor might submit. The PR appears innocent but triggers workflows that exfiltrate sensitive credentials. This is why you should:
+
+- **Never** use `pull_request` triggers with workflows that access secrets
+- Use `pull_request_target` with extreme caution and never checkout untrusted code
+- Configure environment protection rules to require approval for sensitive deployments
+- Prefer `workflow_dispatch` for sensitive operations that require secrets
 
 ## How the masking bypass works
 
@@ -64,4 +80,39 @@ print('Reconstructed:', ' '.join(value))
 PY
 ```
 
-Because each character is separated by a space, GitHub does not detect the exact secret value, but observers can easily recover it.
+Because each character is separated by a space (or converted to ASCII codes), GitHub does not detect the exact secret value, but observers can easily recover it.
+
+## How to Protect Your Secrets
+
+### ✅ Recommended Practices
+
+1. **Avoid `pull_request` triggers for workflows that use secrets**
+   - Use `workflow_dispatch` for manual, trusted operations
+   - Consider `workflow_run` to trigger workflows after PR checks pass
+
+2. **Use environment protection rules**
+   - Require manual approval for deployments
+   - Restrict environments to protected branches only
+   - Configure "Wait timer" for additional safety
+
+3. **Use `pull_request_target` carefully**
+   - Never checkout PR code with `actions/checkout@v2` without ref pinning
+   - Only use trusted, reviewed code with secrets
+   - See [GitHub's security hardening guide](https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions)
+
+4. **Audit workflow permissions**
+   - Set `permissions` to minimum required scope
+   - Use fine-grained personal access tokens where applicable
+   - Regularly review who has write access to the repository
+
+### ⚠️ What Doesn't Work
+
+- ❌ Creating an "environment" without protection rules (as shown by `UNPROTECTED_ENVIRONMENT`)
+- ❌ Assuming environment declarations in workflows automatically protect secrets
+- ❌ Relying solely on secret masking in logs (as this repo demonstrates)
+
+## Learn More
+
+- [GitHub Actions Security Best Practices](https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions)
+- [Keeping your GitHub Actions and workflows secure](https://github.blog/2021-04-22-github-actions-update-helping-maintainers-combat-bad-actors/)
+- [Preventing pwn requests](https://securitylab.github.com/research/github-actions-preventing-pwn-requests/)
