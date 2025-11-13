@@ -31,7 +31,7 @@ jobs:
           python - <<'PY'
           import os
           secret = os.environ['DEMO_ENV_SECRET']
-          print("Environment secret ASCII:", " ".join(str(ord(ch)) for ch in secret))
+          print("Environment secret characters:", "|".join(secret))
           PY
 
   protected-secret:
@@ -47,5 +47,5 @@ jobs:
           python - <<'PY'
           import os
           secret = os.environ['PROTECTED_ENV_SECRET']
-          print("Protected environment secret ASCII:", " ".join(str(ord(ch)) for ch in secret))
+          print("Protected environment secret characters:", "|".join(secret))
           PY

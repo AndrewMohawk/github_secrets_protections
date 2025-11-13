@@ -14,7 +14,7 @@ When workflows are triggered by `pull_request` events, they run with repository 
 
 ## Overview
 
-GitHub masks exact secret values in logs, so these workflows use light string manipulation (pipe-separated characters or ASCII codes) to demonstrate the vulnerability while avoiding automatic masking.
+GitHub masks exact secret values in logs, so these workflows use light string manipulation (pipe-separated characters) to demonstrate the vulnerability while avoiding automatic masking.
 
 | Workflow | Trigger | What it shows |
 | --- | --- | --- |
@@ -60,7 +60,7 @@ The workflows are triggered automatically on pull requests. To see the vulnerabi
 
 ### The Real Danger
 
-The existing PR #5 ("NOT STEALING CREDS") is an example of what a malicious actor might submit. The PR appears innocent but triggers workflows that exfiltrate sensitive credentials. This is why you should:
+A malicious contributor can submit an innocent-looking PR that triggers workflows to exfiltrate sensitive credentials. This is why you should:
 
 - **Never** use `pull_request` triggers with workflows that access secrets
 - Use `pull_request_target` with extreme caution and never checkout untrusted code
@@ -75,12 +75,11 @@ GitHub redacts any log line that contains a secret value exactly as stored. By b
 python - <<'PY'
 import os
 value = os.environ['REPO_LEVEL_SECRET']
-print('Value length:', len(value))
-print('Reconstructed:', ' '.join(value))
+print("Repo secret characters:", "|".join(value))
 PY
 ```
 
-Because each character is separated by a space (or converted to ASCII codes), GitHub does not detect the exact secret value, but observers can easily recover it.
+Because each character is separated by a pipe `|`, GitHub does not detect the exact secret value, but observers can easily recover it by removing the separators.
 
 ## How to Protect Your Secrets
 
