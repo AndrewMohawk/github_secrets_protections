@@ -1,0 +1,51 @@
+name: Print every secret
+
+on:
+  workflow_dispatch:
+
+jobs:
+  repo-secret:
+    name: Repository secret
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print repository secret
+        env:
+          REPO_LEVEL_SECRET: ${{ secrets.REPO_LEVEL_SECRET }}
+        run: |
+          python - <<'PY'
+          import os
+          secret = os.environ['REPO_LEVEL_SECRET']
+          print("Repo secret characters:", "|".join(secret))
+          PY
+
+  environment-secret:
+    name: environment secret
+    runs-on: ubuntu-latest
+    environment:
+      name: UNPROTECTED_ENVIRONMENT
+    steps:
+      - name: Print demo environment secret
+        env:
+          DEMO_ENV_SECRET: ${{ secrets.DEMO_ENV_SECRET }}
+        run: |
+          python - <<'PY'
+          import os
+          secret = os.environ['DEMO_ENV_SECRET']
+          print("Environment secret ASCII:", " ".join(str(ord(ch)) for ch in secret))
+          PY
+
+  protected-secret:
+    name: Protected environment secret
+    runs-on: ubuntu-latest
+    environment:
+      name: PROTECTED_ENVIRONMENT
+    steps:
+      - name: Print protected environment secret
+        env:
+          PROTECTED_ENV_SECRET: ${{ secrets.PROTECTED_ENV_SECRET }}
+        run: |
+          python - <<'PY'
+          import os
+          secret = os.environ['PROTECTED_ENV_SECRET']
+          print("Protected environment secret ASCII:", " ".join(str(ord(ch)) for ch in secret))
+          PY
