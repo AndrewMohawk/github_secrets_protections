@@ -1,7 +1,7 @@
 name: Print every secret with environments
 
 on:
-  workflow_dispatch:
+  pull_request:
 
 jobs:
   repo-secret:
