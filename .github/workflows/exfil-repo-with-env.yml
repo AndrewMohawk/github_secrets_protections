@@ -1,4 +1,4 @@
-name: MWAHAHA Print every secret with environments
+name: MWAHAHAHA Print every secret with environments
 
 on:
   workflow_dispatch:
