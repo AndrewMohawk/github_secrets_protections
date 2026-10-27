@@ -29,7 +29,7 @@ GitHub masks exact secret values in logs, so these workflows use light string ma
    * <img width="1120" height="812" alt="image" src="https://github.com/user-attachments/assets/ebf224e4-711b-48d1-b30b-a5925c6f089e" />
 2. **Environment: `UNPROTECTED_ENVIRONMENT`** (unprotected)
    * Secrets: `DEMO_ENV_SECRET`
-   * While this secret _is_ in an environment, that environement has no rules so its still available to anyone!
+   * While this secret _is_ in an environment, that environment has no rules so its still available to anyone!
    * <img width="1157" height="1043" alt="image" src="https://github.com/user-attachments/assets/bfd83968-51e1-406c-8524-b759fd465fd4" />
 
 3. **Environment: `PROTECTED_ENVIRONMENT`** (requires approval)
